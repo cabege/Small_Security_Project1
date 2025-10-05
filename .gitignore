@@ -1,0 +1,11 @@
+# API 키 및 환경 변수 파일
+.env
+
+# Terraform 상태 및 플러그인 파일
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Python 캐시 파일
+__pycache__/
+*.pyc
