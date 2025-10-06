@@ -41,7 +41,7 @@ def get_ai_analysis(scan_result):
 
     # Google AI API 키 설정
     genai.configure(api_key=GOOGLE_API_KEY)
-    model = genai.GenerativeModel('gemini-pro')
+    model = genai.GenerativeModel('gemini-2.5-pro')
 
     # AI에게 보낼 프롬프트 구성
     prompt = f"""

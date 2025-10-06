@@ -1,0 +1,57 @@
+# 워크플로우의 이름을 지정합니다. GitHub 'Actions' 탭에 이 이름이 표시됩니다.
+name: AI Security Scan
+
+# 워크플로우가 언제 실행될지 지정하는 트리거(trigger) 설정입니다.
+on:
+  # 'main' 브랜치를 대상으로 하는 Pull Request가 생성되거나 업데이트될 때 실행됩니다.
+  pull_request:
+    branches: [ main ]
+
+# 워크플로우에서 실행될 실제 작업(job)들을 정의합니다.
+jobs:
+  # 'security-scan' 이라는 이름의 작업을 정의합니다.
+  security-scan:
+    # 이 작업이 실행될 가상 환경을 지정합니다. (최신 우분투)
+    runs-on: ubuntu-latest
+
+    # 작업 안에서 실행될 단계(step)들을 순서대로 나열합니다.
+    steps:
+      # 1. 코드 체크아웃
+      #    actions/checkout 액션을 사용해 저장소의 코드를 가상 환경으로 내려받습니다.
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Python 환경 설정
+      #    actions/setup-python 액션을 사용해 특정 버전의 파이썬을 설치합니다.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # 3. Python 라이브러리 설치
+      #    Day 2에서 사용했던 라이브러리들과 checkov를 pip으로 설치합니다.
+      - name: Install Python dependencies
+        run: |
+          pip install google-generativeai requests python-dotenv checkov
+
+      # 4. Terraform 설치
+      #    checkov가 Terraform 코드를 스캔하기 위해 필요합니다.
+      #    hashicorp/setup-terraform 액션을 사용해 Terraform을 설치합니다.
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # 5. Checkov 보안 스캔 실행
+      #    checkov를 실행하여 result.json 파일을 생성합니다.
+      #    'continue-on-error: true'는 취약점이 발견되어도(에러 코드 발생) 워크플로우가 중단되지 않고 다음 단계로 넘어가게 해줍니다.
+      - name: Run Checkov scan
+        run: checkov -f main.tf -o json > result.json
+        continue-on-error: true
+
+      # 6. 스캔 결과물 확인 (디버깅용)
+      #    생성된 result.json 파일을 아티팩트(artifact)로 저장합니다.
+      #    워크플로우 실행 결과 페이지에서 이 파일을 다운로드하여 스캔이 잘 되었는지 확인할 수 있어 매우 유용합니다.
+      - name: Upload scan results
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkov-results
+          path: result.json
