@@ -4,19 +4,18 @@ import requests
 import google.generativeai as genai
 from dotenv import load_dotenv
 
-# .env 파일에서 환경 변수 불러오기
+# .env 파일은 로컬 테스트 시에만 사용됩니다. GitHub Actions에서는 다른 방식으로 변수를 받습니다.
 load_dotenv()
 
-# .env 파일에 저장한 Google API 키와 GitHub 토큰을 불러옵니다.
+# --- 🔽 이 부분이 수정되었습니다! 🔽 ---
+# GitHub Actions에서 전달해주는 환경 변수를 읽어옵니다.
+# 로컬 테스트를 위해 .env 파일 값도 기본값으로 사용할 수 있도록 or를 사용합니다.
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+REPO_NAME = os.getenv("REPO_NAME")
+PR_NUMBER = os.getenv("PR_NUMBER")
+# --- 🔼 수정 완료 🔼 ---
 
-# --- ⚠️ 중요: 아래 2개의 변수를 여러분의 환경에 맞게 수정하세요! ---
-# 예: "my-github-id/ai-security-bot"
-REPO_NAME = "cabege/Small_Security_Project1" 
-# 아래 2단계에서 생성할 테스트 PR의 번호 (보통 1)
-PR_NUMBER = 1 
-# --------------------------------------------------------------------
 
 def read_scan_result(file_path="result.json"):
     """Checkov 스캔 결과(result.json) 파일을 읽어 내용을 반환합니다."""
@@ -39,11 +38,9 @@ def get_ai_analysis(scan_result):
     if not failed_checks:
         return "✅ 분석 결과, 발견된 보안 취약점이 없습니다."
 
-    # Google AI API 키 설정
     genai.configure(api_key=GOOGLE_API_KEY)
-    model = genai.GenerativeModel('gemini-2.5-pro')
+    model = genai.GenerativeModel('gemini-2.5-pro') # 이전에 확인한 사용 가능한 모델 이름
 
-    # AI에게 보낼 프롬프트 구성
     prompt = f"""
     당신은 코드 보안 전문가입니다. 주어진 Terraform 코드의 보안 스캔 결과를 분석하고,
     마치 코드 리뷰를 하듯 개발자가 이해하기 쉽게 설명해주세요.
@@ -68,6 +65,11 @@ def get_ai_analysis(scan_result):
 
 def post_github_comment(repo_name, pr_number, comment_body):
     """GitHub PR에 분석 결과를 댓글로 남깁니다."""
+    # 환경 변수가 제대로 전달되었는지 확인
+    if not all([repo_name, pr_number, GITHUB_TOKEN, GOOGLE_API_KEY]):
+        print("오류: 필요한 환경 변수(REPO_NAME, PR_NUMBER, GITHUB_TOKEN, GOOGLE_API_KEY)가 설정되지 않았습니다.")
+        return
+
     url = f"https://api.github.com/repos/{repo_name}/issues/{pr_number}/comments"
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",

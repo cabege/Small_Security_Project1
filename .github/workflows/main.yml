@@ -5,7 +5,7 @@ name: AI Security Scan
 on:
   # 'main' 브랜치를 대상으로 하는 Pull Request가 생성되거나 업데이트될 때 실행됩니다.
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 # 워크플로우에서 실행될 실제 작업(job)들을 정의합니다.
 jobs:
@@ -26,7 +26,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       # 3. Python 라이브러리 설치
       #    Day 2에서 사용했던 라이브러리들과 checkov를 pip으로 설치합니다.
@@ -55,3 +55,19 @@ jobs:
         with:
           name: checkov-results
           path: result.json
+
+      # --- 🔽 이 부분을 파일 맨 아래에 추가하세요! 🔽 ---
+      # 7. AI 분석 및 댓글 작성
+      #    수정된 main.py 스크립트를 실행하여 최종 목표를 달성합니다.
+      - name: Run AI analysis and post comment
+        run: python main.py
+        env:
+          # Day 3에 저장소 Secrets에 등록한 키들을 환경 변수로 전달합니다.
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GHA_TOKEN }}
+
+          # GitHub Actions가 제공하는 기본 환경 변수들을 전달합니다.
+          # github.repository는 '소유자/저장소이름' 형식입니다. 예: 'cabege/ai-security-bot'
+          REPO_NAME: ${{ github.repository }}
+          # github.event.pull_request.number는 현재 워크플로우를 실행시킨 PR의 번호입니다.
+          PR_NUMBER: ${{ github.event.pull_request.number }}
